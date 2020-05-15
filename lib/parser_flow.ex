@@ -40,17 +40,35 @@ defmodule ParserFlow do
   end
 
   def loadMeasurements(path) do
-    path  |> File.stream!
+    cnt = path  |> File.stream!
     |> Flow.from_enumerable()
     |> Flow.map(&parseLine/1)
     |> Flow.uniq_by(fn %{:datetime => datetime, :location => location} -> {location, datetime} end)
-    |> Enum.each(&addMeasurement/1)
+    |> Enum.count()
+    IO.puts(cnt)
+    #    |> Enum.each(&addMeasurement/1)
+  end
+
+  def hashFunc(measurement) do
+    func = rem(measurement.datetime |> elem(1) |> Tuple.to_list() |> Enum.sum(), 8)
+    {measurement, func}
+  end
+
+  def loadMeasurementsPartition(path) do
+    cnt = path  |> File.stream!
+          |> Flow.from_enumerable()
+          |> Flow.map(&parseLine/1)
+          |> Flow.partition(stages: 8, hash: &hashFunc/1) # hash
+          |> Flow.uniq_by(fn %{:datetime => datetime, :location => location} -> {location, datetime} end)
+          |> Enum.count()
+    IO.puts(cnt)
+    #    |> Enum.each(&addMeasurement/1)
   end
 
   def parse(path) do
     :pollution_sup.start_link()
     add_stations_time =     measure(fn -> loadStations(path) end)
-    add_measurements_time = measure(fn -> loadMeasurements(path) end)
+    add_measurements_time = measure(fn -> loadMeasurementsPartition(path) end)
 
     IO.puts "Adding times:"
     IO.puts "stations: #{add_stations_time}"

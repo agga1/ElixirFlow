@@ -39,9 +39,13 @@ defmodule ParserStream do
   end
 
   def loadMeasurements(path) do
-    path  |> File.stream!
+    cnt = path  |> File.stream!
           |> Stream.map(&parseLine/1)
-          |> Enum.each(&addMeasurement/1)
+          |> Stream.uniq_by(fn %{:datetime => datetime, :location => location} -> {location, datetime} end)
+          |> Enum.count()
+#          |> Enum.each(&addMeasurement/1)
+    IO.puts(cnt)
+
   end
 
   def parse(path) do
