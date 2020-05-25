@@ -29,13 +29,15 @@ defmodule ParserStream do
     end
 
   def loadStations(path) do
-    path  |> File.stream!
+    cnt = path  |> File.stream!
           |> Stream.map(&(String.split(&1, ",")))
           |> Stream.map(fn [_, _, x, y, _] -> [x, y] end)
           |> Stream.map(fn [x, y] -> { x|> Float.parse |> elem(0),
                                        y|> Float.parse |> elem(0)} end)
           |> Stream.uniq()
-          |> Enum.each(&addStation/1)
+          |> Enum.count()
+    IO.puts(cnt)
+#          |> Enum.each(&addStation/1)
   end
 
   def loadMeasurements(path) do

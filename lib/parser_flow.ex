@@ -29,14 +29,16 @@ defmodule ParserFlow do
   end
 
   def loadStations(path) do
-    path |> File.stream!
+    cnt = path |> File.stream!
           |> Flow.from_enumerable()
          |> Flow.map(&(String.split(&1, ",")))
          |> Flow.map(fn [_, _, x, y, _] -> [x, y] end)
          |> Flow.map(fn [x, y] -> { x|> Float.parse |> elem(0),
                                       y|> Float.parse |> elem(0)} end)
          |> Flow.uniq()
-         |> Enum.each(&addStation/1)
+         |> Enum.count()
+    IO.puts(cnt)
+#         |> Enum.each(&addStation/1)
   end
 
   def loadMeasurements(path) do
@@ -55,6 +57,17 @@ defmodule ParserFlow do
   end
 
   def loadMeasurementsPartition(path) do
+    cnt = path  |> File.stream!
+          |> Flow.from_enumerable()
+          |> Flow.map(&parseLine/1)
+          |> Flow.partition(stages: 8, hash: &hashFunc/1) # hash
+          |> Flow.uniq_by(fn %{:datetime => datetime, :location => location} -> {location, datetime} end)
+          |> Enum.count()
+    IO.puts(cnt)
+    #    |> Enum.each(&addMeasurement/1)
+  end
+
+  def loadMeasurementsWindow(path) do
     cnt = path  |> File.stream!
           |> Flow.from_enumerable()
           |> Flow.map(&parseLine/1)
